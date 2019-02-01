@@ -1,4 +1,4 @@
-const { user } = require("../models");
+const User = require("../models").user;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -8,7 +8,7 @@ exports.signUp = async (req, res) => {
 
     req.body.password = await bcrypt.hash(req.body.password, salt);
 
-    await user.create(req.body);
+    await User.create(req.body);
 
     res.status(200).json({ message: "Success." });
   } catch (err) {
@@ -17,17 +17,16 @@ exports.signUp = async (req, res) => {
 };
 
 exports.signIn = async (req, res) => {
-  console.log(req.body.email);
   try {
-    const newUser = await user.findOne({ where: { email: req.body.email } });
+    const user = await User.findOne({ where: { email: req.body.email } });
 
-    if (newUser === null) {
+    if (user === null) {
       return res.status(403).json({ message: "User not found." });
     }
 
     const validPassword = await bcrypt.compare(
       req.body.password,
-      newUser.password
+      user.password
     );
 
     if (!validPassword) {
@@ -35,18 +34,17 @@ exports.signIn = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email },
+      { id: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.status(200).json({
       message: "You're logged in",
-      id: newUser.id,
+      id: user.id,
       token
     });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "There is an error.", err });
   }
 };
